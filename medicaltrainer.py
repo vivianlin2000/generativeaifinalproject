@@ -1,3 +1,4 @@
+from medicalevaluator import MedicalEvaluator
 """
 Trainer module for fine-tuning LLMs on medical conversation data.
 
