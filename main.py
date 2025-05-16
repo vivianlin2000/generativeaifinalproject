@@ -1,6 +1,8 @@
 from medicaldataloader import MedicalDataLoader
 from loadsymptoms import load_symptom_dataset
 from medicaldataprocessor import MedicalDataProcessor
+from modelconfigs import get_config
+from medicaltrainer import MedicalLLMTrainer
 
 def tokenize_function(example):
     labels = tokenizer(example['response'], padding="max_length", max_length=4096, truncation=True, return_tensors="pt").to(device)
@@ -11,24 +13,14 @@ def tokenize_function(example):
     del(labels)
     gc.collect()
     return model_inputs
-
-def create_tokenizer(model_name):
-    if model_name in ["meta-llama/Llama-2-7b-hf","meta-llama/Llama-2-13b-hf"]:
-        tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=True)
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        return tokenizer
-    elif model_name in ["google/flan-t5-small", "google/flan-t5-base"]:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        return tokenizer
-    elif model_name == "facebook/opt-1.3b":
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        return tokenizer
       
 loader = MedicalDataLoader()
 combined = loader.create_combined_dataset()
 symptoms = load_symptom_dataset()
 processor = MedicalDataProcessor(include_context_markers=True)
-tokenizer = create_tokenizer(model_name)
+config = get_config(7b")
+config.num_train_epochs = 1  
+base_model, tokenizer, peft_model = create_peft_model(config)
 
 train_data = combined['train']
 val_data = combined['validation']
@@ -63,3 +55,6 @@ tokenized_train_small = tokenized_train.filter(lambda example, index: index % 50
 tokenized_val_small = tokenized_val.filter(lambda example, index: index % 500 == 0, with_indices=True)
 tokenized_test_small = tokenized_test.filter(lambda example, index: index % 500 == 0, with_indices=True)
 
+trainer = MedicalLLMTrainer(config, tokenizer, peft_model, tokenized_train, tokenized_val)
+
+model, trainer, metrics = trainer.train_and_evaluate()
