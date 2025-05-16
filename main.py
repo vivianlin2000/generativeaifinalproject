@@ -58,4 +58,4 @@ tokenized_test_small = tokenized_test.filter(lambda example, index: index % 500 
 
 trainer = MedicalLLMTrainer(config, tokenizer, peft_model, tokenized_train, tokenized_val)
 
-model, trainer, metrics = trainer.train_and_evaluate()
+model, trainer, metrics, eval_results = trainer.train_and_evaluate()
