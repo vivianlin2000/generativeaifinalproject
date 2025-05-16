@@ -228,7 +228,7 @@ class MedicalLLMTrainer:
             self.model.push_to_hub(self.config.hub_model_id)
             self.tokenizer.push_to_hub(self.config.hub_model_id)
     
-    @classmethod
+@classmethod
     def load_trained_model(
         cls,
         model_path: str,
@@ -254,29 +254,34 @@ class MedicalLLMTrainer:
         
         return model, tokenizer, config
     
-    def evaluate_model(
-        self,
-        eval_dataset: Dataset,
-        metrics: Optional[List[str]] = None
-    ) -> Dict[str, float]:
-        """
-        Evaluate the model on a dataset.
-        
-        Args:
-            eval_dataset: Evaluation dataset
-            metrics: List of metrics to evaluate (defaults to "loss" only)
-            
-        Returns:
-            Dictionary of metrics
-        """
-        if self.trainer is None:
-            raise ValueError("Trainer not set up yet. Call train() first or initialize trainer.")
-            
-        logger.info(f"Evaluating model on {len(eval_dataset)} examples")
-        
-        eval_results = self.trainer.evaluate(eval_dataset)
-        
-        logger.info(f"Evaluation results: {eval_results}")
+    def evaluate_model(self):
+    """Evaluate the trained model."""
+        logger.info("Evaluating model...")
+    
+        # Initialize evaluator
+        evaluator = MedicalConversationEvaluator(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            output_dir=os.path.join(self.config.output_dir, "evaluation")
+        )
+    
+        # Evaluate all aspects of the model
+        eval_results = evaluator.evaluate_all(
+            with_markers=self.config.context_markers
+        )
+    
+        # Log evaluation results
+        logger.info("Evaluation results:")
+        for aspect, results in eval_results.items():
+            logger.info(f"{aspect}: {results}")
+    
+        # Save evaluation results
+        results_path = os.path.join(args.output_dir, "evaluation_results.json")
+        with open(results_path, "w") as f:
+            json.dump(eval_results, f, indent=2)
+    
+        logger.info(f"Saved evaluation results to {results_path}")
+    
         return eval_results
     
     def train_and_evaluate(
@@ -297,8 +302,9 @@ class MedicalLLMTrainer:
         trainer, metrics = self.train(
             **train_kwargs
         )
+        eval_results = evaluate_model(
         
-        return self.model, trainer, metrics
+        return self.model, trainer, metrics, eval_results
 
 
 
