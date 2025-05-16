@@ -3,6 +3,7 @@ from loadsymptoms import load_symptom_dataset
 from medicaldataprocessor import MedicalDataProcessor
 from modelconfigs import get_config
 from medicaltrainer import MedicalLLMTrainer
+from modelloader import create_peft_model
 
 def tokenize_function(example):
     labels = tokenizer(example['response'], padding="max_length", max_length=4096, truncation=True, return_tensors="pt").to(device)
